@@ -287,7 +287,7 @@ td.td-l{text-align:left;padding-left:8px}
   <div class="tbl-w">
     <table><thead><tr>
       <th class="th-d">May</th><th class="th-d">Asesor</th><th class="th-d">Cliente</th>
-      <th class="th-d">Doc</th><th class="th-d">Correo</th><th class="th-d">Operador</th>
+      <th class="th-d">Doc</th><th class="th-d">Fecha Exp</th><th class="th-d">Correo</th><th class="th-d">Operador</th>
       <th class="th-d">N. Porta</th><th class="th-d">Modalidad</th><th class="th-d">NIP</th>
       <th class="th-d">Plan</th><th class="th-d">Tipo</th><th class="th-d">EKIA</th>
       <th class="th-d">Pedido</th><th class="th-d">Equipo</th><th class="th-d">Hora</th><th class="th-d"></th>
@@ -675,7 +675,7 @@ function renderEsim(){
   document.getElementById("esimCounts").innerHTML=sby.length?sby.map((a,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--brd);font-size:12px"><span><span style="color:var(--mut);font-size:10px;margin-right:4px">${i+1}</span>${a}${IS_NEW.has(a)?'<span class="new-badge">N</span>':''}</span><span class="badge bg">${cnt[a]}</span></div>`).join(""):'<div style="color:var(--mut);font-size:12px">Sin registros</div>';
   document.getElementById("esimBody").innerHTML=es.map((e,i)=>`<tr style="background:${i%2===0?"#F8FAFC":"#fff"}">
     <td>${e.d||""}</td><td class="td-l">${e.a||""}</td><td class="td-l">${e.cli||""}</td>
-    <td>${e.tdoc||""} ${e.ndoc||""}</td><td style="font-size:10px;max-width:120px">${e.mail||""}</td>
+    <td>${e.tdoc||""} ${e.ndoc||""}</td><td style="font-size:10px">${e.fexp||""}</td><td style="font-size:10px;max-width:120px">${e.mail||""}</td>
     <td>${e.op||""}</td><td>${e.nport||""}</td>
     <td style="font-size:10px">${e.mod||""}</td><td>${e.nip||""}</td>
     <td>${e.plan||""}</td><td>${e.type||""}</td>
@@ -844,7 +844,7 @@ function setEsP(i){esP=i;refreshBtns();}function setEsT(v){esT=v;refreshBtns();}
 function updatePreview(){const p=PLANS[fP],t=TYPES.find(x=>x.v===fT),bill=Math.round(p.s*t.f);document.getElementById("pvSiva").textContent=fCOP(p.s);document.getElementById("pvBill").textContent=fCOP(bill);document.getElementById("pvCnt").textContent=t.f<1?"0.5 venta":"1 venta completa";document.getElementById("fPreview").style.display="block";}
 
 function initSelectors(){
-  const advH=`<option value="">-- Asesor --</option>`+ADV.map(a=>`<option>${a}${IS_NEW.has(a)?" (Nuevo)":""}</option>`).join("");
+  const advH=`<option value="">-- Asesor --</option>`+ADV.map(a=>`<option value="${a}">${a}${IS_NEW.has(a)?" (Nuevo)":""}</option>`).join("");
   const dayH=`<option value="">-- Día --</option>`+WD.map(d=>`<option value="${d}">${String(d).padStart(2,"0")} May — ${DN[dow(d)]}${SAT.has(d)?" (4h)":""}${d===today?" HOY":""}</option>`).join("");
   ["fAdv","esAdv","caAdv"].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=advH;});
   ["fDay","esDay","caDay"].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=dayH;});
