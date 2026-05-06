@@ -1,5 +1,5 @@
 [index.html](https://github.com/user-attachments/files/27441511/index.12.html)
-<!DOCTYPE html>
+<TEAM JAROLD>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
