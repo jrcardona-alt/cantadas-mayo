@@ -1,5 +1,6 @@
-[index.html](https://github.com/user-attachments/files/27442100/index.13.html)
-<!DOCTYPE html>
+[Sitio de ventas](https://github.com/user-attachments/files/27442100/index.13.html)
+<Vendiendo es vendiendo
+>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
