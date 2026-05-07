@@ -483,22 +483,73 @@ td.td-l{text-align:left;padding-left:7px;font-size:10px}
 </div>
 
 <div id="tab-comisiones" class="tab">
+<div class="row">
+<div class="col" style="max-width:460px">
 <div class="card">
-  <div class="ct">🏎️ Carrera de activas</div>
-  <div class="cs">Ingresa las activas de cada asesor — el carrito avanza según su progreso</div>
-  <div id="raceWrap" class="race-wrap"></div>
-</div>
-<div class="row" style="margin-top:14px">
-  <div class="col">
-    <div class="card"><div class="ct">Calculadora de comisiones</div><div class="tbl-w" id="comTable"></div></div>
-  </div>
-  <div class="col" style="max-width:290px">
-    <div class="card">
-      <div class="ct">Tabla comisional mayo 2026</div>
-      <div class="tbl-w"><table><thead><tr><th class="th-d">Desde</th><th class="th-d">Hasta</th><th class="th-d">%</th><th class="th-d">Min</th><th class="th-d">Max</th></tr></thead><tbody id="comRef"></tbody></table></div>
-      <div style="margin-top:8px;font-size:10px;color:var(--mut)">Antiguos: piso $2.300.000 &nbsp;|&nbsp; Nuevos: piso $1.800.000</div>
+  <div class="ct">🧮 Calculadora de comisión</div>
+  <div class="cs">Solo visible en tu pantalla — no afecta a otros asesores</div>
+  <div class="fl">
+    <label>¿Eres antiguo o nuevo?</label>
+    <div style="display:flex;gap:8px;margin-bottom:4px">
+      <button class="pb" id="btnAnt" onclick="setTipoC('ant')" style="flex:1;padding:10px">Antiguo</button>
+      <button class="pb" id="btnNue" onclick="setTipoC('nue')" style="flex:1;padding:10px">Nuevo</button>
     </div>
   </div>
+  <div class="fl">
+    <label>Factura acumulada sin IVA ($)</label>
+    <input type="number" id="cFact" placeholder="Ej: 3500000" oninput="calcCom()">
+  </div>
+  <div class="fl">
+    <label>Cantidad de activas</label>
+    <input type="number" id="cAct" placeholder="Ej: 65" oninput="calcCom()">
+  </div>
+  <div id="cResult" style="display:none;margin-top:4px">
+    <div id="cNivel" style="text-align:center;padding:12px;border-radius:10px;margin-bottom:10px;font-size:14px;font-weight:700"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+      <div class="card" style="padding:10px;text-align:center;margin:0">
+        <div style="font-size:10px;color:var(--mut);margin-bottom:4px">COMISION MIN</div>
+        <div id="cMin" style="font-size:18px;font-weight:700;color:#6EE7B7"></div>
+      </div>
+      <div class="card" style="padding:10px;text-align:center;margin:0">
+        <div style="font-size:10px;color:var(--mut);margin-bottom:4px">COMISION MAX</div>
+        <div id="cMax" style="font-size:18px;font-weight:700;color:#818CF8"></div>
+      </div>
+      <div class="card" style="padding:10px;text-align:center;margin:0">
+        <div style="font-size:10px;color:var(--mut);margin-bottom:4px">BONO ACTIVAS</div>
+        <div id="cBono" style="font-size:18px;font-weight:700;color:#FCD34D"></div>
+      </div>
+      <div class="card" style="padding:10px;text-align:center;margin:0">
+        <div style="font-size:10px;color:var(--mut);margin-bottom:4px">TOTAL ESTIMADO</div>
+        <div id="cTotal" style="font-size:18px;font-weight:700;color:#F59E0B"></div>
+      </div>
+    </div>
+    <div class="card" style="margin:0;padding:12px">
+      <div style="font-size:12px;font-weight:600;margin-bottom:8px;color:var(--txt)">⚠️ Simular penalizadores</div>
+      <div id="penChks"></div>
+      <div id="cPenResult" style="display:none;margin-top:10px;padding:10px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px">
+        <div style="font-size:11px;color:#FCA5A5;margin-bottom:4px">Comisión con penalizadores aplicados:</div>
+        <div id="cPenTotal" style="font-size:20px;font-weight:700;color:#FCA5A5"></div>
+      </div>
+    </div>
+  </div>
+  <div id="cNoData" style="text-align:center;padding:20px;color:var(--mut);font-size:13px">
+    Selecciona tu tipo e ingresa los datos para calcular
+  </div>
+</div>
+</div>
+<div class="col">
+  <div class="card">
+    <div class="ct">🚨 Penalizadores</div>
+    <div id="penList"></div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <div class="ct">Tabla de referencia</div>
+    <div style="font-size:11px;font-weight:600;color:#6EE7B7;margin-bottom:6px">Antiguos (piso $2.300.000)</div>
+    <div class="tbl-w" style="margin-bottom:12px"><table><thead><tr><th class="th-d">Desde</th><th class="th-d">Hasta</th><th class="th-d">Com. Min</th><th class="th-d">Com. Max</th><th class="th-d">Q Activas</th><th class="th-d">Bono</th></tr></thead><tbody id="tblAnt"></tbody></table></div>
+    <div style="font-size:11px;font-weight:600;color:#818CF8;margin-bottom:6px">Nuevos (piso $1.800.000)</div>
+    <div class="tbl-w"><table><thead><tr><th class="th-d">Desde</th><th class="th-d">Hasta</th><th class="th-d">Com. Min</th><th class="th-d">Com. Max</th><th class="th-d">Q Activas</th><th class="th-d">Bono</th></tr></thead><tbody id="tblNue"></tbody></table></div>
+  </div>
+</div>
 </div>
 </div>
 
@@ -589,6 +640,7 @@ function initSplash(){
     },2400);
   },200);
 }
+if(window.speechSynthesis){window.speechSynthesis.onvoiceschanged=()=>{};window.speechSynthesis.getVoices();}
 initSplash();
 
 
@@ -605,8 +657,8 @@ const SAT=new Set([2,9,16,23,30]);
 const WEEKS=[{l:"S1",d:[2]},{l:"Semana 2",d:[4,5,6,7,8,9]},{l:"Semana 3",d:[11,12,13,14,15,16]},{l:"Semana 4",d:[19,20,21,22,23]},{l:"Semana 5",d:[25,26,27,28,29,30]}];
 const WC=["#6D28D9","#0369A1","#0D9488","#7C3AED","#0F766E"];
 const DN=["Dom","Lun","Mar","Mie","Jue","Vie","Sab"];
-const COM=[{f:1800000,t:2299999,p:.15,mn:270000,mx:345000},{f:2300000,t:2699999,p:.16,mn:368000,mx:432000},{f:2700000,t:3099999,p:.17,mn:459000,mx:527000},{f:3100000,t:3499999,p:.18,mn:558000,mx:630000},{f:3500000,t:3899999,p:.19,mn:665000,mx:741000},{f:3900000,t:4299999,p:.20,mn:780000,mx:860000},{f:4300000,t:4699999,p:.21,mn:903000,mx:987000},{f:4700000,t:Infinity,p:.22,mn:1034000,mx:null}];
-const META_ACTIVAS=40;
+
+
 const TPL=[
   {title:"Escalamiento logistico",c:"#818CF8",txt:"# de pedido: \nEstado en Beetrack: \nFecha de ultimo estado: \n# Contacto: \nDireccion: \nComplemento (barrio / referencia): \nCiudad: \nMotivo de escalamiento: "},
   {title:"Cancelacion de venta",c:"#0D9488",txt:"PEDIDO: \nNOMBRE DEL CLIENTE: \nCedula del cliente: \nLinea de telefono de la venta: \nAsesor que solicita: \nMotivo: "},
@@ -650,6 +702,7 @@ function showSaleAnim(s){
   const cols=["#0D9488","#F59E0B","#EF4444","#818CF8","#10B981","#3B82F6","#EC4899","#6EE7B7"];
   for(let i=0;i<90;i++){const d=document.createElement("div");d.className="cf";const size=5+Math.random()*8;d.style.cssText=`left:${Math.random()*100}%;top:-10px;background:${cols[i%cols.length]};width:${size}px;height:${size}px;border-radius:${Math.random()>.5?"50%":"3px"};animation:fall ${1.5+Math.random()*2}s ${Math.random()*.5}s linear forwards;`;c.appendChild(d);}
   setTimeout(()=>document.getElementById("saleOverlay").classList.remove("show"),5500);
+  setTimeout(()=>speak(getSaleMsg(s.a,s.pl,s.tp)),600);
 }
 
 // ── FIREBASE ──────────────────────────────────────────────────────
@@ -748,7 +801,7 @@ function renderAll(){
   if(currentTab==="ventas")renderVentas();
   if(currentTab==="esim")renderEsim();
   if(currentTab==="cancel")renderCancel();
-  if(currentTab==="comisiones")renderComisiones();
+  if(currentTab==="comisiones"){renderPenList();renderRefTables();}
   if(currentTab==="cumple")renderBdays();
   updateBdayBanner();
 }
@@ -929,135 +982,6 @@ function renderCancel(){
   </tr>`).join("");
 }
 
-function renderComisiones(){
-  const{aTot,srt}=derived();
-  const activas=db.activas||{};
-  const raceGrad=["#0D9488,#6366F1","#6366F1,#EC4899","#0369A1,#0D9488","#059669,#6366F1","#7C3AED,#0D9488","#F59E0B,#EF4444","#10B981,#818CF8","#EF4444,#F59E0B"];
-  const bg0="rgba(255,255,255,0.04)",bg1="rgba(255,255,255,0.02)";
-
-  let raceH="";
-  srt.forEach((a,idx)=>{
-    const akey=a.replace(/ /g,"_"),act=activas[akey]||0;
-    const pct=Math.min((act/META_ACTIVAS)*100,100);
-    const grad=raceGrad[idx%raceGrad.length];
-    const face=getFace(act,META_ACTIVAS);
-    const isNew=IS_NEW.has(a);
-    const carPos=Math.min(pct,96);
-    raceH+=`<div class="race-row">
-      <div class="race-name">${a.split(" ")[0]} ${a.split(" ")[1]}${isNew?'<span class="new-badge">N</span>':""}</div>
-      <div style="flex:1;padding:0 10px">
-        <div class="race-track">
-          <div class="race-fill" style="width:${pct}%;background:linear-gradient(90deg,${grad})"></div>
-          <span class="race-car" style="left:calc(${carPos}% - 10px)">${pct>=100?"🏁":"🚗"}</span>
-        </div>
-      </div>
-      <div style="font-size:16px">${face}</div>
-      <div class="race-pct">${act}/${META_ACTIVAS}</div>
-      <input type="number" min="0" class="race-input" value="${act||""}" placeholder="0" onchange="updateActivas('${a}',this.value)">
-    </div>`;
-  });
-  document.getElementById("raceWrap").innerHTML=raceH;
-
-  const sbg=["rgba(209,250,229,0.15)","rgba(167,243,208,0.2)","rgba(110,231,183,0.2)","rgba(52,211,153,0.25)","rgba(16,185,129,0.3)","rgba(5,150,105,0.35)","rgba(4,120,87,0.4)","rgba(6,95,70,0.45)"];
-  const stx=["#6EE7B7","#6EE7B7","#34D399","#34D399","#fff","#fff","#fff","#fff"];
-  let h=`<table><thead><tr>${["Asesor","Tipo","Factura","Nivel","%","Base","Com. min","Com. max"].map(c=>`<th class="th-d" style="text-align:left;padding:5px 7px">${c}</th>`).join("")}</tr></thead><tbody>`;
-  srt.forEach((a,idx)=>{
-    const tot=aTot[a],isNew=IS_NEW.has(a);
-    const floor=isNew?1800000:2300000;
-    const bEff=tot.b>=floor?tot.b:0;
-    const r=bEff>0?getCom(bEff):null;
-    const si=r?COM.findIndex(c=>bEff>=c.f&&bEff<=c.t):-1;
-    h+=`<tr style="background:${idx%2===0?bg0:bg1}">
-      <td style="text-align:left;padding:4px 7px;font-weight:600;font-size:10px;color:var(--txt)">${a}${isNew?'<span class="new-badge">N</span>':""}</td>
-      <td><span class="${isNew?"qn":"bg"}" style="font-size:9px">${isNew?"Nuevo":"Antiguo"}</span></td>
-      <td style="color:#93C5FD;font-size:10px">${tot.b>0?fCOP(tot.b):"—"}</td>
-      <td style="background:${si>=0?sbg[si]:""};color:${si>=0?stx[si]:"var(--mut)"};font-weight:600;font-size:10px">${r?"Nv "+(si+1):"—"}</td>
-      <td style="font-weight:700;color:#6EE7B7;font-size:10px">${r?(r.p*100)+"%":"—"}</td>
-      <td style="font-size:10px;color:var(--txt)">${r?fCOP(Math.round(bEff*r.p)):"—"}</td>
-      <td style="color:#818CF8;font-weight:600;font-size:10px">${r?fCOP(r.mn):"—"}</td>
-      <td style="color:#6EE7B7;font-weight:600;font-size:10px">${r?(r.mx?fCOP(r.mx):"Abierto"):"—"}</td></tr>`;
-  });
-  document.getElementById("comTable").innerHTML=h+`</tbody></table>`;
-  document.getElementById("comRef").innerHTML=COM.map((r,i)=>`<tr style="background:${i%2===0?bg0:bg1}">
-    <td style="font-size:10px;color:var(--txt)">${fCOP(r.f)}</td>
-    <td style="font-size:10px;color:var(--txt)">${r.t===Infinity?"4.700.000+":fCOP(r.t)}</td>
-    <td style="font-weight:700;color:#6EE7B7">${r.p*100}%</td>
-    <td style="font-size:10px">${fCOP(r.mn)}</td>
-    <td style="font-size:10px">${r.mx?fCOP(r.mx):"Abierto"}</td></tr>`).join("");
-}
-
-function updateBdayBanner(){
-  const bdays=db.bdays||{},bdmap={};
-  ADV.forEach(a=>bdmap[a]=bdays[a.replace(/ /g,"_")]||"");
-  const todayB=ADV.filter(a=>isBDtoday(bdmap[a]));
-  const bn=document.getElementById("bdbanner");
-  if(todayB.length){bn.textContent="🎂 HOY es el cumpleaños de: "+todayB.map(a=>a.split(" ")[0]).join(", ")+" — ¡Felicitaciones! 🎉🥳";bn.classList.add("on");}
-  else bn.classList.remove("on");
-}
-
-function renderBdays(){
-  const bdays=db.bdays||{},bdmap={};
-  ADV.forEach(a=>bdmap[a]=bdays[a.replace(/ /g,"_")]||"");
-  const todayB=ADV.filter(a=>isBDtoday(bdmap[a]));
-  const up=ADV.map(a=>({a,dm:bdmap[a],d:nextBD(bdmap[a])})).filter(x=>x.d!==null).sort((a,b)=>a.d-b.d);
-  const next=up[0];
-  const cel=document.getElementById("bdCel");
-  if(todayB.length){
-    const fw=["✨","🎊","⭐","💫","🌟","🎈","🎉","🥳","🎂","🌈","🎆","🎇"];
-    const cols=["#0D9488","#6D28D9","#F59E0B","#10B981","#EF4444","#0369A1","#EC4899"];
-    const fwH=Array.from({length:14},(_,i)=>`<span class="bd-fw" style="left:${Math.random()*88}%;top:${Math.random()*60}%;animation-delay:${i*.18}s;animation-duration:${1.2+Math.random()}s;color:${cols[i%cols.length]}">${fw[i%fw.length]}</span>`).join("");
-    cel.innerHTML=`<div class="bd-cel">${fwH}<div style="position:relative;font-size:56px;margin-bottom:10px">🎂</div><div style="position:relative;font-size:28px;font-weight:700;background:linear-gradient(135deg,#6EE7B7,#818CF8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px">${todayB.map(a=>a.split(" ")[0]).join(" y ")}</div><div style="position:relative;font-size:18px;color:#A5F3FC;margin-bottom:4px">¡Feliz Cumpleaños! 🎉🥳</div><div style="position:relative;font-size:13px;color:rgba(255,255,255,.5)">De todo el equipo con mucho cariño ❤️</div></div>`;
-  } else cel.innerHTML="";
-  const cr=document.getElementById("cdRow");
-  if(next){
-    cr.innerHTML=`<div class="col" style="max-width:215px"><div class="card" style="border-left:3px solid #F59E0B">
-      <div style="font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">🎂 Próximo cumpleaños</div>
-      <div style="font-size:14px;font-weight:600;color:#FCD34D;margin-bottom:4px">${next.a}</div>
-      <div style="font-size:38px;font-weight:700;background:linear-gradient(135deg,#F59E0B,#FCD34D);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1">${next.d===0?"¡HOY! 🎉":next.d+" días"}</div>
-      <div style="font-size:11px;color:var(--mut);margin-top:5px">📅 ${next.dm}</div>
-    </div></div>`+up.slice(1,4).map(x=>`<div class="col" style="max-width:160px"><div class="card bd-card${x.d<=7?" soon":""}">
-      <div style="font-size:10px;color:var(--mut);text-transform:uppercase;margin-bottom:3px">Próximamente</div>
-      <div style="font-size:13px;font-weight:600;color:var(--txt)">${x.a.split(" ")[0]} ${x.a.split(" ")[1]}</div>
-      <div style="font-size:24px;font-weight:700;color:${x.d<=7?"#FCD34D":"#818CF8"}">${x.d===0?"¡HOY!":x.d+" d"}</div>
-      <div style="font-size:11px;color:var(--mut)">${x.dm}</div>
-    </div></div>`).join("");
-  } else cr.innerHTML='<div style="color:var(--mut);font-size:13px;padding:10px 0">Ingresa los cumpleaños para ver el próximo 🗓️</div>';
-  document.getElementById("bdGrid").innerHTML=ADV.map(a=>{
-    const dm=bdmap[a],isT=isBDtoday(dm),d=nextBD(dm),isSoon=d!==null&&d<=7&&!isT;
-    return`<div class="bd-card${isT?" today":isSoon?" soon":""}">
-      <div class="bd-name">${a.split(" ")[0]} ${a.split(" ")[1]}${IS_NEW.has(a)?'<span class="new-badge">N</span>':""} ${isT?'<span class="bd-tag">🎂 HOY</span>':isSoon?'<span class="bd-soon-tag">Pronto</span>':""}</div>
-      <div class="bd-inp"><input placeholder="DD/MM" maxlength="5" style="flex:1;font-size:12px;padding:5px 8px;color:var(--txt)" value="${dm}" onchange="updateBday('${a}',this.value)"><span class="bd-days">${d!==null?(d===0?"🎉":d+"d"):""}</span></div>
-    </div>`;
-  }).join("");
-}
-
-function renderTickets(){
-  const tpls=db.tpl||{};
-  document.getElementById("tplCards").innerHTML=TPL.map((t,i)=>`
-    <div class="tplcard">
-      <div class="tplh" style="border-left:3px solid ${t.c}" onclick="toggleTpl(${i})">
-        <span class="tplt" id="tplarr${i}">▶ ${t.title}</span>
-        <button class="cpbtn" id="cpbtn${i}" onclick="event.stopPropagation();copyTpl(${i})">Copiar</button>
-      </div>
-      <div class="tplb" id="tplb${i}">
-        <textarea id="tplta${i}" rows="9" oninput="saveTpl(${i},this.value)">${(tpls[i]||t.txt).replace(/</g,"&lt;")}</textarea>
-      </div>
-    </div>`).join("");
-}
-let openTpls=new Set();
-function toggleTpl(i){const b=document.getElementById("tplb"+i),a=document.getElementById("tplarr"+i);if(openTpls.has(i)){openTpls.delete(i);b.classList.remove("op");a.innerHTML="▶ "+TPL[i].title;}else{openTpls.add(i);b.classList.add("op");a.innerHTML="▼ "+TPL[i].title;}}
-function copyTpl(i){if(!openTpls.has(i))toggleTpl(i);const ta=document.getElementById("tplta"+i),btn=document.getElementById("cpbtn"+i);if(!ta||!btn)return;try{navigator.clipboard.writeText(ta.value);}catch(e){ta.select();document.execCommand("copy");}btn.textContent="¡Copiado!";btn.classList.add("ok");setTimeout(()=>{btn.textContent="Copiar";btn.classList.remove("ok");ta.value=TPL[i].txt;saveTpl(i,TPL[i].txt);},3000);}
-
-function setFP(i){fP=i;refreshBtns();updatePreview();}
-function setFT(v){fT=v;refreshBtns();updatePreview();}
-function setEsP(i){esP=i;refreshBtns();}
-function setEsT(v){esT=v;refreshBtns();}
-function refreshBtns(){
-  PLANS.forEach((_,i)=>{const el=document.querySelector(`#fPlans .pb:nth-child(${i+1})`);if(el)el.className="pb"+(fP===i?" s":"");});
-  TYPES.forEach(t=>{document.querySelectorAll("#fTypes .typb").forEach(el=>{if(el.textContent===t.l)el.className="typb"+(fT===t.v?" s":"");});});
-  PLANS.forEach((_,i)=>{const el=document.querySelector(`#esPlans .pb:nth-child(${i+1})`);if(el)el.className="pb"+(esP===i?" s":"");});
-  TYPES.forEach(t=>{document.querySelectorAll("#esTypes .typb").forEach(el=>{if(el.textContent===t.l)el.className="typb"+(esT===t.v?" s":"");});});
-}
 function initBtns(){
   document.getElementById("fPlans").innerHTML=PLANS.map((p,i)=>`<button class="pb" onclick="setFP(${i})">${p.l}</button>`).join("");
   document.getElementById("fTypes").innerHTML=TYPES.map(t=>`<button class="typb" onclick="setFT('${t.v}')">${t.l}</button>`).join("");
@@ -1095,10 +1019,142 @@ function showTab(name){
   if(name==="ventas")renderVentas();
   if(name==="esim")renderEsim();
   if(name==="cancel")renderCancel();
-  if(name==="comisiones")renderComisiones();
+  if(name==="comisiones"){renderPenList();renderRefTables();}
   if(name==="cumple")renderBdays();
 }
 function getQBadge(rank,total){const p=rank/total;if(p<.25)return'<span class="q1">Q1</span>';if(p<.5)return'<span class="q2">Q2</span>';if(p<.75)return'<span class="q3">Q3</span>';return'<span class="q4">Q4</span>';}
+
+// ── CALCULADORA LOCAL ─────────────────────────────────────────────
+const COM_ANT=[{f:2300000,t:2799999,d:368000,h:448000,qa:50,bv:100000},{f:2800000,t:3199999,d:476000,h:544000,qa:58,bv:150000},{f:3200000,t:3599999,d:576000,h:648000,qa:66,bv:200000},{f:3600000,t:3999999,d:684000,h:760000,qa:74,bv:250000},{f:4000000,t:4399999,d:800000,h:880000,qa:82,bv:250000},{f:4400000,t:4799999,d:924000,h:1008000,qa:90,bv:250000},{f:4800000,t:5199999,d:1056000,h:1144000,qa:98,bv:250000},{f:5200000,t:null,d:1196000,h:null,qa:null,bv:null}];
+const COM_NUE=[{f:1800000,t:2299999,d:270000,h:345000,qa:40,bv:100000},{f:2300000,t:2699999,d:368000,h:432000,qa:48,bv:150000},{f:2700000,t:3099999,d:459000,h:527000,qa:56,bv:200000},{f:3100000,t:3499999,d:558000,h:630000,qa:64,bv:250000},{f:3500000,t:3899999,d:665000,h:741000,qa:72,bv:250000},{f:3900000,t:4299999,d:780000,h:860000,qa:80,bv:250000},{f:4300000,t:4699999,d:903000,h:987000,qa:88,bv:250000},{f:4700000,t:null,d:1034000,h:null,qa:null,bv:null}];
+const PENALIZADORES=[
+  {id:"p1",txt:"Asistencia < 90% al turno",pct:30,type:"pct"},
+  {id:"p2",txt:"Nota de calidad < 85%",pct:10,type:"pct"},
+  {id:"p3",txt:"Bolsa de bajas tempranas",pct:10,type:"pct"},
+  {id:"p4",txt:"PQR o irregularidad procedente",pct:100,type:"pct"},
+  {id:"p5",txt:"Alertas de malas practicas / procesos erroneos",pct:100,type:"pct"},
+  {id:"p6",txt:"Ausencia injustificada (AI) — por cada una",pct:50,type:"pct"},
+  {id:"p7",txt:"Migraciones: 50% menos al valor del plan",pct:0,type:"info"},
+  {id:"p8",txt:"Conversion minimo 70% — penaliza 10% comision",pct:10,type:"pct"},
+  {id:"p9",txt:"ALERTA MALAS PRACTICAS — suspende todo acelerador",pct:0,type:"warn"},
+  {id:"p10",txt:"PPT sin adjunto de documento — NO PROCEDENTE",pct:0,type:"warn"},
+];
+let cTipo=null;
+
+function setTipoC(t){
+  cTipo=t;
+  document.getElementById("btnAnt").className="pb"+(t==="ant"?" s":"");
+  document.getElementById("btnNue").className="pb"+(t==="nue"?" s":"");
+  calcCom();
+}
+
+function fCOP2(n){if(!n&&n!==0)return"Abierto";return"$"+Math.round(n).toLocaleString("es-CO");}
+
+function calcCom(){
+  if(!cTipo){document.getElementById("cResult").style.display="none";document.getElementById("cNoData").style.display="block";return;}
+  const fact=parseInt(document.getElementById("cFact").value)||0;
+  const act=parseInt(document.getElementById("cAct").value)||0;
+  const tbl=cTipo==="ant"?COM_ANT:COM_NUE;
+  const row=tbl.find(r=>fact>=r.f&&(r.t===null||fact<=r.t));
+  const bonoRow=tbl.find(r=>r.qa!==null&&act>=r.qa);
+  const bono=bonoRow?bonoRow.bv:0;
+
+  document.getElementById("cNoData").style.display="none";
+  document.getElementById("cResult").style.display="block";
+
+  if(!row||fact===0){
+    document.getElementById("cNivel").style.cssText="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#FCA5A5;text-align:center;padding:12px;border-radius:10px;margin-bottom:10px;font-size:14px;font-weight:700";
+    document.getElementById("cNivel").textContent="Factura por debajo del piso — sin comision aun";
+    document.getElementById("cMin").textContent="—";
+    document.getElementById("cMax").textContent="—";
+    document.getElementById("cBono").textContent=fCOP2(bono);
+    document.getElementById("cTotal").textContent=fCOP2(bono);
+    renderPenChks(0,bono);
+    return;
+  }
+
+  const nivel=tbl.indexOf(row)+1;
+  const nColors=["rgba(13,148,136,0.2)","rgba(13,148,136,0.25)","rgba(99,102,241,0.2)","rgba(245,158,11,0.2)","rgba(249,115,22,0.25)","rgba(239,68,68,0.2)","rgba(239,68,68,0.25)","rgba(139,92,246,0.3)"];
+  const nTextColors=["#6EE7B7","#6EE7B7","#818CF8","#FCD34D","#FDB97D","#FCA5A5","#FCA5A5","#C4B5FD"];
+  document.getElementById("cNivel").style.cssText=`background:${nColors[nivel-1]||nColors[0]};border:1px solid rgba(255,255,255,0.1);color:${nTextColors[nivel-1]||"#6EE7B7"};text-align:center;padding:12px;border-radius:10px;margin-bottom:10px;font-size:14px;font-weight:700`;
+  document.getElementById("cNivel").textContent="Nivel "+nivel+" — "+(cTipo==="ant"?"Antiguo":"Nuevo");
+  document.getElementById("cMin").textContent=fCOP2(row.d);
+  document.getElementById("cMax").textContent=fCOP2(row.h);
+  document.getElementById("cBono").textContent=fCOP2(bono);
+  const totalMin=(row.d||0)+bono;
+  const totalMax=row.h?(row.h+bono):null;
+  document.getElementById("cTotal").textContent=totalMax?fCOP2(totalMin)+" – "+fCOP2(totalMax):fCOP2(totalMin)+"+";
+  renderPenChks(row.d||0,bono);
+}
+
+function renderPenChks(comBase,bono){
+  const pens=PENALIZADORES.filter(p=>p.type==="pct");
+  document.getElementById("penChks").innerHTML=pens.map(p=>`
+    <label style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--brd);cursor:pointer;font-size:12px">
+      <input type="checkbox" id="${p.id}" onchange="calcPen(${comBase},${bono})" style="width:16px;height:16px;accent-color:var(--dan)">
+      <span style="flex:1">${p.txt}</span>
+      <span style="color:#FCA5A5;font-weight:600;white-space:nowrap">-${p.pct}%</span>
+    </label>`).join("");
+  document.getElementById("cPenResult").style.display="none";
+}
+
+function calcPen(comBase,bono){
+  const pens=PENALIZADORES.filter(p=>p.type==="pct");
+  let totalPct=0;
+  pens.forEach(p=>{const el=document.getElementById(p.id);if(el&&el.checked)totalPct+=p.pct;});
+  if(totalPct===0){document.getElementById("cPenResult").style.display="none";return;}
+  totalPct=Math.min(totalPct,100);
+  const reduccion=Math.round(comBase*(totalPct/100));
+  const final=Math.max(0,(comBase-reduccion)+bono);
+  document.getElementById("cPenResult").style.display="block";
+  document.getElementById("cPenTotal").textContent=fCOP2(final)+" (reduccion de "+totalPct+"%)";
+}
+
+function renderPenList(){
+  const colors={pct:"rgba(239,68,68,0.15)",info:"rgba(245,158,11,0.15)",warn:"rgba(139,92,246,0.15)"};
+  const textColors={pct:"#FCA5A5",info:"#FCD34D",warn:"#C4B5FD"};
+  const icons={pct:"⚠️",info:"ℹ️",warn:"🚫"};
+  document.getElementById("penList").innerHTML=PENALIZADORES.map((p,i)=>`
+    <div style="display:flex;gap:10px;padding:8px 10px;border-radius:8px;margin-bottom:6px;background:${colors[p.type]};border:1px solid rgba(255,255,255,0.06)">
+      <span style="font-size:14px;flex-shrink:0">${icons[p.type]}</span>
+      <div style="flex:1">
+        <span style="font-size:11px;color:${textColors[p.type]}">${i+1}. ${p.txt}</span>
+        ${p.pct>0?`<span style="float:right;font-size:10px;font-weight:700;color:${textColors[p.type]}">-${p.pct}%</span>`:""}
+      </div>
+    </div>`).join("");
+}
+
+function renderRefTables(){
+  const bg0="rgba(255,255,255,0.04)",bg1="rgba(255,255,255,0.02)";
+  const mkRow=(r,i)=>`<tr style="background:${i%2===0?bg0:bg1}">
+    <td>${fCOP2(r.f)}</td><td>${r.t?fCOP2(r.t):"Abierto"}</td>
+    <td style="color:#6EE7B7">${fCOP2(r.d)}</td><td style="color:#818CF8">${r.h?fCOP2(r.h):"Abierto"}</td>
+    <td style="color:#FCD34D">${r.qa||"—"}</td><td style="color:#F59E0B">${r.bv?fCOP2(r.bv):"—"}</td></tr>`;
+  document.getElementById("tblAnt").innerHTML=COM_ANT.map(mkRow).join("");
+  document.getElementById("tblNue").innerHTML=COM_NUE.map(mkRow).join("");
+}
+
+
+// ── VOZ ───────────────────────────────────────────────────────────
+function speak(text){
+  try{
+    window.speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang="es-CO";u.rate=0.88;u.pitch=1.05;u.volume=0.85;
+    const voices=window.speechSynthesis.getVoices();
+    const es=voices.find(v=>v.lang.startsWith("es")&&v.name.includes("Google"));
+    if(es)u.voice=es;
+    window.speechSynthesis.speak(u);
+  }catch(e){}
+}
+
+function getSaleMsg(advisorName,plan,tipo){
+  const first=advisorName.split(" ")[0];
+  if(tipo==="migracion")return first+", ha realizado una migración. Media venta menos para la comisión.";
+  if(plan==="$44.990")return first+", vendiste pero muy barato. Apunta más alto la próxima.";
+  if(plan==="$64.990")return first+", esa es la venta que más cuenta. Felicitaciones, una menos para comisionar.";
+  return first+" ha realizado una venta. Felicitaciones, una menos para comisionar.";
+}
 function showApp(){
   document.getElementById("app-loading").style.display="none";
   document.getElementById("app-main").style.display="block";
