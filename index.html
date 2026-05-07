@@ -988,6 +988,10 @@ function refreshBtns(){
   PLANS.forEach((_,i)=>{const el=document.querySelector(`#esPlans .pb:nth-child(${i+1})`);if(el)el.className="pb"+(esP===i?" s":"");});
   TYPES.forEach(t=>{document.querySelectorAll("#esTypes .typb").forEach(el=>{if(el.textContent===t.l)el.className="typb"+(esT===t.v?" s":"");});});
 }
+function setFP(i){fP=i;PLANS.forEach((_,j)=>{const el=document.querySelector("#fPlans .pb:nth-child("+(j+1)+")");if(el)el.className="pb"+(j===i?" s":"");});updatePreview();}
+function setFT(v){fT=v;TYPES.forEach(t=>{document.querySelectorAll("#fTypes .typb").forEach(el=>{if(el.textContent===t.l)el.className="typb"+(t.v===v?" s":"");});});updatePreview();}
+function setEP(i){esP=i;PLANS.forEach((_,j)=>{const el=document.querySelector("#esPlans .pb:nth-child("+(j+1)+")");if(el)el.className="pb"+(j===i?" s":"");});}
+function setET(v){esT=v;TYPES.forEach(t=>{document.querySelectorAll("#esTypes .typb").forEach(el=>{if(el.textContent===t.l)el.className="typb"+(t.v===v?" s":"");});});}
 function initBtns(){
   document.getElementById("fPlans").innerHTML=PLANS.map((p,i)=>`<button class="pb" onclick="setFP(${i})">${p.l}</button>`).join("");
   document.getElementById("fTypes").innerHTML=TYPES.map(t=>`<button class="typb" onclick="setFT('${t.v}')">${t.l}</button>`).join("");
@@ -1014,6 +1018,46 @@ function initSelectors(){
   document.getElementById("vfType").innerHTML=`<option value="">Todos</option>`+TYPES.map(t=>`<option value="${t.v}">${t.l}</option>`).join("");
   ["vfAdv","vfDay","vfPlan","vfType"].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener("change",renderVentas);});
 }
+
+function renderTickets(){
+  const tpls=db.tpl||{};
+  const el=document.getElementById("tplCards");
+  if(!el)return;
+  el.innerHTML=TPL.map((t,i)=>'<div class="tplcard"><div class="tplh" style="border-left:3px solid '+t.c+'" onclick="toggleTpl('+i+')"><span class="tplt" id="tplarr'+i+'">&#9658; '+t.title+'</span><button class="cpbtn" id="cpbtn'+i+'" onclick="event.stopPropagation();copyTpl('+i+')">Copiar</button></div><div class="tplb" id="tplb'+i+'"><textarea id="tplta'+i+'" rows="9" oninput="saveTpl('+i+',this.value)">'+(tpls[i]||t.txt).replace(/</g,"&lt;")+'</textarea></div></div>').join("");
+}
+let openTpls=new Set();
+function toggleTpl(i){const b=document.getElementById("tplb"+i),a=document.getElementById("tplarr"+i);if(openTpls.has(i)){openTpls.delete(i);b.classList.remove("op");a.innerHTML="&#9658; "+TPL[i].title;}else{openTpls.add(i);b.classList.add("op");a.innerHTML="&#9660; "+TPL[i].title;}}
+function copyTpl(i){if(!openTpls.has(i))toggleTpl(i);const ta=document.getElementById("tplta"+i),btn=document.getElementById("cpbtn"+i);if(!ta||!btn)return;try{navigator.clipboard.writeText(ta.value);}catch(e){ta.select();document.execCommand("copy");}btn.textContent="Copiado!";btn.classList.add("ok");setTimeout(()=>{btn.textContent="Copiar";btn.classList.remove("ok");ta.value=TPL[i].txt;saveTpl(i,TPL[i].txt);},3000);}
+
+function renderBdays(){
+  const bdays=db.bdays||{},bdmap={};
+  ADV.forEach(a=>bdmap[a]=bdays[a.replace(/ /g,"_")]||"");
+  const todayB=ADV.filter(a=>isBDtoday(bdmap[a]));
+  const up=ADV.map(a=>{return{a,dm:bdmap[a],d:nextBD(bdmap[a])};}).filter(x=>x.d!==null).sort((a,b)=>a.d-b.d);
+  const next=up[0];
+  const cel=document.getElementById("bdCel");
+  if(cel){
+    if(todayB.length){
+      const fw=["&#10024;","&#127882;","&#11088;","&#128171;","&#127775;","&#127880;","&#127881;","&#129395;","&#127874;","&#127752;"],cols=["#0D9488","#6D28D9","#F59E0B","#10B981","#EF4444","#0369A1","#EC4899"];
+      let fwH="";for(let i=0;i<10;i++)fwH+='<span class="bd-fw" style="left:'+Math.floor(i*9.5)+'%;top:'+Math.floor((i%3)*25)+'%;animation-delay:'+(i*.2)+'s;animation-duration:1.5s;color:'+cols[i%cols.length]+'">'+fw[i%fw.length]+'</span>';
+      cel.innerHTML='<div class="bd-cel">'+fwH+'<div style="position:relative;font-size:56px;margin-bottom:10px">&#127874;</div><div style="position:relative;font-size:28px;font-weight:700;background:linear-gradient(135deg,#6EE7B7,#818CF8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px">'+todayB.map(a=>a.split(" ")[0]).join(" y ")+'</div><div style="position:relative;font-size:18px;color:#A5F3FC;margin-bottom:4px">Feliz Cumpleanos! &#127881;&#129395;</div><div style="position:relative;font-size:13px;color:rgba(255,255,255,.5)">De todo el equipo con mucho carino &#10084;&#65039;</div></div>';
+    }else cel.innerHTML="";
+  }
+  const cr=document.getElementById("cdRow");
+  if(cr){
+    if(next){
+      cr.innerHTML='<div class="col" style="max-width:215px"><div class="card" style="border-left:3px solid #F59E0B"><div style="font-size:10px;color:var(--mut);text-transform:uppercase;margin-bottom:5px">&#127874; Proximo cumpleanos</div><div style="font-size:14px;font-weight:600;color:#FCD34D;margin-bottom:4px">'+next.a+'</div><div style="font-size:38px;font-weight:700;background:linear-gradient(135deg,#F59E0B,#FCD34D);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1">'+(next.d===0?"HOY! &#127881;":next.d+" dias")+'</div><div style="font-size:11px;color:var(--mut);margin-top:5px">Fecha: '+next.dm+'</div></div></div>'+up.slice(1,4).map(x=>'<div class="col" style="max-width:160px"><div class="card bd-card'+(x.d<=7?" soon":"")+'"><div style="font-size:10px;color:var(--mut);text-transform:uppercase;margin-bottom:3px">Proximamente</div><div style="font-size:13px;font-weight:600;color:var(--txt)">'+x.a.split(" ")[0]+' '+x.a.split(" ")[1]+'</div><div style="font-size:24px;font-weight:700;color:'+(x.d<=7?"#FCD34D":"#818CF8")+'">'+(x.d===0?"HOY!":x.d+" d")+'</div><div style="font-size:11px;color:var(--mut)">'+x.dm+'</div></div></div>').join("");
+    }else cr.innerHTML='<div style="color:var(--mut);font-size:13px;padding:10px 0">Ingresa los cumpleanos para ver el proximo</div>';
+  }
+  const grid=document.getElementById("bdGrid");
+  if(grid){
+    grid.innerHTML=ADV.map(a=>{
+      const dm=bdmap[a],isT=isBDtoday(dm),d=nextBD(dm),isSoon=d!==null&&d<=7&&!isT;
+      return'<div class="bd-card'+(isT?" today":isSoon?" soon":"")+'"><div class="bd-name">'+a.split(" ")[0]+' '+a.split(" ")[1]+(IS_NEW.has(a)?'<span class="new-badge">N</span>':"")+' '+(isT?'<span class="bd-tag">HOY</span>':isSoon?'<span class="bd-soon-tag">Pronto</span>':"")+'</div><div class="bd-inp"><input placeholder="DD/MM" maxlength="5" style="flex:1;font-size:12px;padding:5px 8px;color:var(--txt)" value="'+dm+'" onchange="updateBday(\''+a+'\',this.value)"><span class="bd-days">'+(d!==null?(d===0?"&#127881;":d+"d"):"")+'</span></div></div>';
+    }).join("");
+  }
+}
+
 function showTab(name){
   document.querySelectorAll(".tab").forEach(el=>el.classList.remove("act"));
   document.querySelectorAll(".tb").forEach(el=>el.classList.remove("act"));
@@ -1024,6 +1068,10 @@ function showTab(name){
   if(name==="cantadas")renderCantadas();
   if(name==="ventas")renderVentas();
   if(name==="esim")renderEsim();
+  if(name==="cancel")renderCancel();
+  if(name==="tickets")renderTickets();
+  if(name==="comisiones"){renderPenList();renderRefTables();}
+  if(name==="cumple")renderBdays();
   if(name==="cancel")renderCancel();
   if(name==="tickets"){renderTickets();}
   if(name==="comisiones"){renderPenList();renderRefTables();}
