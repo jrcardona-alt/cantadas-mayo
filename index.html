@@ -982,6 +982,12 @@ function renderCancel(){
   </tr>`).join("");
 }
 
+function refreshBtns(){
+  PLANS.forEach((_,i)=>{const el=document.querySelector(`#fPlans .pb:nth-child(${i+1})`);if(el)el.className="pb"+(fP===i?" s":"");});
+  TYPES.forEach(t=>{document.querySelectorAll("#fTypes .typb").forEach(el=>{if(el.textContent===t.l)el.className="typb"+(fT===t.v?" s":"");});});
+  PLANS.forEach((_,i)=>{const el=document.querySelector(`#esPlans .pb:nth-child(${i+1})`);if(el)el.className="pb"+(esP===i?" s":"");});
+  TYPES.forEach(t=>{document.querySelectorAll("#esTypes .typb").forEach(el=>{if(el.textContent===t.l)el.className="typb"+(esT===t.v?" s":"");});});
+}
 function initBtns(){
   document.getElementById("fPlans").innerHTML=PLANS.map((p,i)=>`<button class="pb" onclick="setFP(${i})">${p.l}</button>`).join("");
   document.getElementById("fTypes").innerHTML=TYPES.map(t=>`<button class="typb" onclick="setFT('${t.v}')">${t.l}</button>`).join("");
