@@ -1076,21 +1076,29 @@ function renderBdays(){
 function speakRank(type,name){
   try{
     var first=name.split(" ")[0];
-    var msg="";
-    if(type==="up1")msg=first+" acaba de subir al Cuartil 1. Eso es excelencia. Felicitaciones "+first+"!";
-    else if(type==="up2")msg=first+" subio al Cuartil 2. Muy bien "+first+", sigue empujando!";
-    else if(type==="up3")msg=first+" salio del Cuartil 4. La tendencia es tuya "+first+", no pares!";
-    else if(type==="down")msg=first+", el cuartil bajo. Es momento de reaccionar y dar mas.";
-    else if(type==="day")msg=first+" lidera el dia de hoy. El equipo te esta mirando. Mantente arriba!";
-    else if(type==="week")msg=first+" es el lider de la semana. Eso es consistencia de campeon!";
+    var msgs={
+      up1:""+first+" acabo de subir al Cuartil 1. Eso es excelencia!",
+      up2:first+" subio al Cuartil 2. Muy bien, sigue empujando!",
+      up3:first+" salio del Cuartil 4. La tendencia es tuya, no pares!",
+      down:first+", el cuartil bajo. Es momento de reaccionar.",
+      day:""+first+" lidera el dia de hoy. El equipo te esta mirando!",
+      week:first+" es el lider de la semana. Eso es consistencia de campeon!"
+    };
+    var msg=msgs[type]||"";
     if(!msg)return;
     var u=new SpeechSynthesisUtterance(msg);
-    u.lang="es-CO";u.rate=0.88;u.pitch=1.05;u.volume=0.9;
+    u.lang="es-CO";u.rate=0.88;u.pitch=1.05;u.volume=0.92;
     var voices=window.speechSynthesis.getVoices();
-    var es=voices.find(function(v){return v.lang==="es-CO";})||voices.find(function(v){return v.lang.startsWith("es");});
-    if(es)u.voice=es;
-    setTimeout(function(){window.speechSynthesis.speak(u);},300);
-  }catch(e){}
+    var vx=voices.find(function(v){return v.lang==="es-CO";})
+      ||voices.find(function(v){return v.lang.startsWith("es");});
+    if(vx)u.voice=vx;
+    // Queue after current speech instead of cancelling
+    if(window.speechSynthesis.speaking){
+      setTimeout(function(){window.speechSynthesis.speak(u);},2000);
+    }else{
+      window.speechSynthesis.speak(u);
+    }
+  }catch(ex){}
 }
 
 // ── RANK TRACKER ──────────────────────────────────────────────────
@@ -1142,44 +1150,52 @@ function showRankCard(type,name,msg){
 function rnd(arr){return arr[Math.floor(Math.random()*arr.length)];}
 
 function checkRankChanges(){
-  const{srt,aTot,aMap}=derived();
-  const total=ADV.length;
-  const wd=curWeek(today);
+  try{
+    var d=derived();
+    var srt=d.srt,aMap=d.aMap,total=ADV.length;
+    var wd=curWeek(today);
 
-  // Check quartile changes
-  srt.forEach((a,idx)=>{
-    const newQ=IS_NEW.has(a)?0:getQ(idx,total);
-    const oldQ=prevQuartiles[a];
-    if(oldQ!==undefined&&newQ!==0&&oldQ!==0){
-      if(newQ<oldQ){
-        const msgs=QUPMSG[newQ]||QUPMSG[3];
-        pushRankNotif("up","up"+newQ,a.split(" ")[0]+" "+a.split(" ")[1],rnd(msgs));
-      } else if(newQ>oldQ){
-        pushRankNotif("down","down",a.split(" ")[0]+" "+a.split(" ")[1],rnd(QDOWNMSG));
+    // Quartile changes
+    srt.forEach(function(a,idx){
+      if(IS_NEW.has(a))return;
+      var p=idx/total;
+      var nq=p<.25?1:p<.5?2:p<.75?3:4;
+      var oq=prevQuartiles[a];
+      if(oq!==undefined&&oq!==nq){
+        if(nq<oq){
+          var msgs={1:["Subiste al Q1! Eso es excelencia pura.","Cuartil 1 logrado! El equipo te ve arriba."],2:["Subiste a Q2! Eso no es casualidad, es trabajo.","Q2 logrado! Estas en la mitad superior."],3:["Saliste de Q4! Cada venta cuenta.","De Q4 a Q3! La tendencia es tuya."]};
+          var arr=msgs[nq]||msgs[3];
+          pushRankNotif("up","up"+nq,a.split(" ")[0]+" "+a.split(" ")[1],arr[Math.floor(Math.random()*arr.length)]);
+        }else{
+          var dm=["El cuartil bajo, pero el dia no termino. Reacciona ahora.","Momento de reactivarse. Tienes el mes para remontar.","Un cuartil es solo un numero. La actitud lo cambia todo."];
+          pushRankNotif("down","down",a.split(" ")[0]+" "+a.split(" ")[1],dm[Math.floor(Math.random()*dm.length)]);
+        }
       }
-    }
-    if(newQ!==0)prevQuartiles[a]=newQ;
-  });
+      prevQuartiles[a]=nq;
+    });
 
-  // Check daily leader
-  const dayTop=ADV.map(a=>({a,v:aMap[a]?.[today]||0})).sort((x,y)=>y.v-x.v).filter(x=>x.v>0);
-  if(dayTop.length){
-    const newDayLead=dayTop[0].a;
-    if(prevDayLeader&&newDayLead!==prevDayLeader&&dayTop[0].v>0){
-      pushRankNotif("day","day",newDayLead.split(" ")[0]+" "+newDayLead.split(" ")[1],rnd(DAYLEADMSG));
+    // Daily leader
+    var dayTop=ADV.map(function(a){return{a:a,v:(aMap[a]&&aMap[a][today])||0};}).sort(function(x,y){return y.v-x.v;}).filter(function(x){return x.v>0;});
+    if(dayTop.length){
+      var ndl=dayTop[0].a;
+      if(prevDayLeader&&ndl!==prevDayLeader){
+        var dm2=["Lider del dia! El equipo te esta mirando. Mantente arriba.","Primer lugar hoy! Eso diferencia a los mejores.","Top del dia! Esa energia es contagiosa."];
+        pushRankNotif("day","day",ndl.split(" ")[0]+" "+ndl.split(" ")[1],dm2[Math.floor(Math.random()*dm2.length)]);
+      }
+      prevDayLeader=ndl;
     }
-    prevDayLeader=newDayLead;
-  }
 
-  // Check weekly leader
-  const weekTop=ADV.map(a=>({a,v:wd.reduce((s,d)=>s+(aMap[a]?.[d]||0),0)})).sort((x,y)=>y.v-x.v).filter(x=>x.v>0);
-  if(weekTop.length){
-    const newWeekLead=weekTop[0].a;
-    if(prevWeekLeader&&newWeekLead!==prevWeekLeader&&weekTop[0].v>0){
-      pushRankNotif("week","week",newWeekLead.split(" ")[0]+" "+newWeekLead.split(" ")[1],rnd(WEEKLEADMSG));
+    // Weekly leader
+    var weekTop=ADV.map(function(a){return{a:a,v:wd.reduce(function(s,d){return s+((aMap[a]&&aMap[a][d])||0);},0)};}).sort(function(x,y){return y.v-x.v;}).filter(function(x){return x.v>0;});
+    if(weekTop.length){
+      var nwl=weekTop[0].a;
+      if(prevWeekLeader&&nwl!==prevWeekLeader){
+        var wm=["Lider de la semana! Eso es consistencia de campeon.","Primero en la semana! El trabajo sostenido tiene recompensa.","Top semanal! El equipo aprende de lo que tu haces."];
+        pushRankNotif("week","week",nwl.split(" ")[0]+" "+nwl.split(" ")[1],wm[Math.floor(Math.random()*wm.length)]);
+      }
+      prevWeekLeader=nwl;
     }
-    prevWeekLeader=newWeekLead;
-  }
+  }catch(ex){console.log("rankErr",ex);}
 }
 
 function showTab(name){
