@@ -295,6 +295,17 @@ td.td-l{text-align:left;padding-left:7px;font-size:10px}
 .rn-icon{font-size:22px;margin-bottom:4px}
 .rn-title{font-size:12px;font-weight:700;margin-bottom:2px}
 .rn-msg{font-size:11px;color:#94A3B8;line-height:1.45}
+
+#rnBox{position:fixed;top:88px;right:14px;z-index:6000;width:300px;pointer-events:none;}
+.rnCard{background:rgba(10,15,30,0.97);border-radius:12px;padding:13px 15px;margin-bottom:8px;border:1px solid rgba(255,255,255,0.12);box-shadow:0 8px 32px rgba(0,0,0,0.6);transform:translateX(340px);transition:transform .45s cubic-bezier(.175,.885,.32,1.275),opacity .45s;}
+.rnCard.show{transform:translateX(0);}
+.rnCard.hide{transform:translateX(340px);opacity:0;}
+.rnUp{border-color:rgba(16,185,129,0.6);background:linear-gradient(135deg,rgba(10,15,30,0.97),rgba(6,78,59,0.4));}
+.rnDown{border-color:rgba(239,68,68,0.5);background:linear-gradient(135deg,rgba(10,15,30,0.97),rgba(127,29,29,0.3));}
+.rnLead{border-color:rgba(245,158,11,0.7);background:linear-gradient(135deg,rgba(10,15,30,0.97),rgba(120,53,15,0.4));}
+.rnIcon{font-size:20px;margin-bottom:3px;}
+.rnName{font-size:12px;font-weight:700;color:#F1F5F9;margin-bottom:2px;}
+.rnMsg{font-size:11px;color:#94A3B8;line-height:1.4;}
 </style>
 </head>
 <body>
@@ -335,7 +346,7 @@ td.td-l{text-align:left;padding-left:7px;font-size:10px}
   <div class="splash-sub">Team Jarold Barrios · Mayo 2026</div>
 </div>
 
-<div id="rankNotif"></div>
+<div id="rnBox"></div>
 <div id="app-loading" class="loading">
   <div style="font-size:32px;margin-bottom:12px;animation:bounce 1s ease-in-out infinite">🚀</div>
   <div style="color:#6EE7B7;font-weight:600;font-size:15px;margin-bottom:6px">Conectando con la nube...</div>
@@ -1073,130 +1084,112 @@ function renderBdays(){
 
 
 
-function speakRank(type,name){
-  try{
-    var first=name.split(" ")[0];
-    var msgs={
-      up1:""+first+" acabo de subir al Cuartil 1. Eso es excelencia!",
-      up2:first+" subio al Cuartil 2. Muy bien, sigue empujando!",
-      up3:first+" salio del Cuartil 4. La tendencia es tuya, no pares!",
-      down:first+", el cuartil bajo. Es momento de reaccionar.",
-      day:""+first+" lidera el dia de hoy. El equipo te esta mirando!",
-      week:first+" es el lider de la semana. Eso es consistencia de campeon!"
-    };
-    var msg=msgs[type]||"";
-    if(!msg)return;
-    var u=new SpeechSynthesisUtterance(msg);
-    u.lang="es-CO";u.rate=0.88;u.pitch=1.05;u.volume=0.92;
-    var voices=window.speechSynthesis.getVoices();
-    var vx=voices.find(function(v){return v.lang==="es-CO";})
-      ||voices.find(function(v){return v.lang.startsWith("es");});
-    if(vx)u.voice=vx;
-    // Queue after current speech instead of cancelling
-    if(window.speechSynthesis.speaking){
-      setTimeout(function(){window.speechSynthesis.speak(u);},2000);
-    }else{
+
+// ── RANK NOTIFICATIONS ────────────────────────────────────────────
+var rnPrevQ = {};
+var rnPrevDay = "";
+var rnPrevWeek = "";
+var rnQueue = [];
+var rnRunning = false;
+
+function rnSpeak(msg) {
+  try {
+    var u = new SpeechSynthesisUtterance(msg);
+    u.lang = "es-CO"; u.rate = 0.88; u.pitch = 1.05; u.volume = 0.92;
+    var vs = window.speechSynthesis.getVoices();
+    var v = vs.find(function(x){return x.lang==="es-CO";}) || vs.find(function(x){return x.lang.startsWith("es");});
+    if(v) u.voice = v;
+    if(window.speechSynthesis.speaking) {
+      setTimeout(function(){window.speechSynthesis.speak(u);}, 1800);
+    } else {
       window.speechSynthesis.speak(u);
     }
-  }catch(ex){}
+  } catch(e) {}
 }
 
-// ── RANK TRACKER ──────────────────────────────────────────────────
-let prevQuartiles={};
-let prevDayLeader="";
-let prevWeekLeader="";
-let rankNotifQueue=[];
-let rankNotifRunning=false;
-
-function getQ(rank,total){const p=rank/total;if(p<.25)return 1;if(p<.5)return 2;if(p<.75)return 3;return 4;}
-
-const QUPMSG={
-  1:["Llegaste al TOP! Eres Q1 ahora. Eso es excelencia pura.","Cuartil 1 alcanzado! El equipo te ve arriba. Mantente.","Impresionante! Ya eres parte de la elite del equipo."],
-  2:["Subiste a Q2! Eso no es casualidad, es trabajo.","Q2 logrado! Estas en la mitad superior. Sigue empujando.","Gran salto! Ya estas en Q2. El Q1 esta al alcance."],
-  3:["Saliste de Q4! Cada venta cuenta y lo estás demostrando.","De Q4 a Q3! La tendencia es tuya. No pares ahora.","Mejorando! Ya estas en Q3. El equipo lo nota."]
-};
-const QDOWNMSG=[
-  "El cuartil bajo, pero el dia no termino. Reacciona ahora.","Los numeros piden mas. Tienes el resto del mes para remontar.","Momento de reactivarse. Un cuartil es solo un numero, la actitud lo cambia todo."
-];
-const DAYLEADMSG=["Lider del dia! El equipo te esta mirando. Mantente arriba.","Primer lugar hoy! Eso es lo que diferencia a los mejores.","Top del dia! Esa energia es contagiosa. Sigue así."];
-const WEEKLEADMSG=["Lider de la semana! Eso es consistencia de campeon.","Primero en la semana! El trabajo sostenido tiene recompensa.","Top semanal! El equipo aprende de lo que tu haces."];
-
-function pushRankNotif(type,rankType,name,msg){
-  rankNotifQueue.push({type,rankType,name,msg});
-  speakRank(rankType,name);
-  if(!rankNotifRunning)processRankQueue();
+function rnShow(cls, icon, name, msg, voice) {
+  var box = document.getElementById("rnBox");
+  if(!box) return;
+  var div = document.createElement("div");
+  div.className = "rnCard " + cls;
+  div.innerHTML = '<div class="rnIcon">' + icon + '</div><div class="rnName">' + name + '</div><div class="rnMsg">' + msg + '</div>';
+  box.appendChild(div);
+  setTimeout(function(){ div.classList.add("show"); }, 30);
+  setTimeout(function(){ div.classList.add("hide"); setTimeout(function(){div.remove();}, 500); }, 4500);
+  if(voice) setTimeout(function(){rnSpeak(voice);}, 400);
 }
 
-function processRankQueue(){
-  if(!rankNotifQueue.length){rankNotifRunning=false;return;}
-  rankNotifRunning=true;
-  const item=rankNotifQueue.shift();
-  showRankCard(item.type,item.name,item.msg);
-  setTimeout(processRankQueue,3800);
-}
+function rnPick(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
 
-function showRankCard(type,name,msg){
-  const container=document.getElementById("rankNotif");
-  if(!container)return;
-  const icons={up:"🚀",down:"📉",day:"🏆",week:"🏅"};
-  const cls={up:"rn-up",down:"rn-down",day:"rn-lead",week:"rn-lead"};
-  const div=document.createElement("div");
-  div.className="rn-card "+cls[type];
-  div.innerHTML='<div class="rn-icon">'+icons[type]+'</div><div class="rn-title">'+name+'</div><div class="rn-msg">'+msg+'</div>';
-  container.appendChild(div);
-  setTimeout(()=>{div.classList.add("out");setTimeout(()=>div.remove(),400);},2800);
-}
+function checkRanks() {
+  try {
+    var sal = db.sales ? Object.values(db.sales) : [];
+    var aMap = {};
+    ADV.forEach(function(a) {
+      aMap[a] = {};
+      WD.forEach(function(d){ aMap[a][d] = 0; });
+    });
+    sal.forEach(function(s) {
+      if(aMap[s.a] && aMap[s.a][s.d] !== undefined) aMap[s.a][s.d] += s.vc;
+    });
+    var totals = {};
+    ADV.forEach(function(a) {
+      totals[a] = WD.reduce(function(acc,d){return acc+(aMap[a][d]||0);}, 0);
+    });
+    var srt = ADV.filter(function(a){return !IS_NEW.has(a);}).slice().sort(function(a,b){return totals[b]-totals[a];});
+    var total = srt.length;
 
-function rnd(arr){return arr[Math.floor(Math.random()*arr.length)];}
-
-function checkRankChanges(){
-  try{
-    var d=derived();
-    var srt=d.srt,aMap=d.aMap,total=ADV.length;
-    var wd=curWeek(today);
-
-    // Quartile changes
-    srt.forEach(function(a,idx){
-      if(IS_NEW.has(a))return;
-      var p=idx/total;
-      var nq=p<.25?1:p<.5?2:p<.75?3:4;
-      var oq=prevQuartiles[a];
-      if(oq!==undefined&&oq!==nq){
-        if(nq<oq){
-          var msgs={1:["Subiste al Q1! Eso es excelencia pura.","Cuartil 1 logrado! El equipo te ve arriba."],2:["Subiste a Q2! Eso no es casualidad, es trabajo.","Q2 logrado! Estas en la mitad superior."],3:["Saliste de Q4! Cada venta cuenta.","De Q4 a Q3! La tendencia es tuya."]};
-          var arr=msgs[nq]||msgs[3];
-          pushRankNotif("up","up"+nq,a.split(" ")[0]+" "+a.split(" ")[1],arr[Math.floor(Math.random()*arr.length)]);
-        }else{
-          var dm=["El cuartil bajo, pero el dia no termino. Reacciona ahora.","Momento de reactivarse. Tienes el mes para remontar.","Un cuartil es solo un numero. La actitud lo cambia todo."];
-          pushRankNotif("down","down",a.split(" ")[0]+" "+a.split(" ")[1],dm[Math.floor(Math.random()*dm.length)]);
+    // ── Quartile check ──
+    srt.forEach(function(a, idx) {
+      var p = idx / total;
+      var nq = p < 0.25 ? 1 : p < 0.5 ? 2 : p < 0.75 ? 3 : 4;
+      var oq = rnPrevQ[a];
+      if(oq !== undefined && oq !== nq) {
+        if(nq < oq) {
+          var first = a.split(" ")[0] + " " + a.split(" ")[1];
+          if(nq === 1) {
+            rnShow("rnLead","🚀",first,rnPick(["Subiste al Cuartil 1. Eso es excelencia pura.","Cuartil 1 alcanzado. El equipo te ve arriba."]),""+first+" subio al Cuartil 1. Felicitaciones!");
+          } else if(nq === 2) {
+            rnShow("rnUp","⬆️",first,rnPick(["Subiste a Q2. Eso no es casualidad, es trabajo.","Q2 logrado. Estas en la mitad superior."]),first+" subio al Cuartil 2. Muy bien, sigue empujando!");
+          } else {
+            rnShow("rnUp","📈",first,rnPick(["Saliste de Q4. Cada venta cuenta.","De Q4 a Q3. La tendencia es tuya, no pares."]),first+" salio del Cuartil 4. Bien hecho, sigue subiendo!");
+          }
+        } else {
+          var first2 = a.split(" ")[0] + " " + a.split(" ")[1];
+          rnShow("rnDown","📉",first2,rnPick(["El cuartil bajo, pero el dia no termino. Reacciona ahora.","Momento de reactivarse. Tienes el mes para remontar."]),first2+", el cuartil bajo. Es momento de dar mas.");
         }
       }
-      prevQuartiles[a]=nq;
+      rnPrevQ[a] = nq;
     });
 
-    // Daily leader
-    var dayTop=ADV.map(function(a){return{a:a,v:(aMap[a]&&aMap[a][today])||0};}).sort(function(x,y){return y.v-x.v;}).filter(function(x){return x.v>0;});
-    if(dayTop.length){
-      var ndl=dayTop[0].a;
-      if(prevDayLeader&&ndl!==prevDayLeader){
-        var dm2=["Lider del dia! El equipo te esta mirando. Mantente arriba.","Primer lugar hoy! Eso diferencia a los mejores.","Top del dia! Esa energia es contagiosa."];
-        pushRankNotif("day","day",ndl.split(" ")[0]+" "+ndl.split(" ")[1],dm2[Math.floor(Math.random()*dm2.length)]);
+    // ── Daily leader ──
+    var dayArr = ADV.map(function(a){return {a:a,v:aMap[a][today]||0};
+    }).sort(function(x,y){return y.v-x.v;}).filter(function(x){return x.v>0;});
+    if(dayArr.length) {
+      var nd = dayArr[0].a;
+      var ndName = nd.split(" ")[0]+" "+nd.split(" ")[1];
+      if(rnPrevDay && rnPrevDay !== nd) {
+        rnShow("rnLead","🏆",ndName,rnPick(["Lider del dia. El equipo te esta mirando. Mantente arriba!","Primer lugar hoy. Eso diferencia a los mejores.","Top del dia. Esa energia es contagiosa."]),""+ndName+" lidera el dia de hoy. Asi se hace!");
       }
-      prevDayLeader=ndl;
+      rnPrevDay = nd;
     }
 
-    // Weekly leader
-    var weekTop=ADV.map(function(a){return{a:a,v:wd.reduce(function(s,d){return s+((aMap[a]&&aMap[a][d])||0);},0)};}).sort(function(x,y){return y.v-x.v;}).filter(function(x){return x.v>0;});
-    if(weekTop.length){
-      var nwl=weekTop[0].a;
-      if(prevWeekLeader&&nwl!==prevWeekLeader){
-        var wm=["Lider de la semana! Eso es consistencia de campeon.","Primero en la semana! El trabajo sostenido tiene recompensa.","Top semanal! El equipo aprende de lo que tu haces."];
-        pushRankNotif("week","week",nwl.split(" ")[0]+" "+nwl.split(" ")[1],wm[Math.floor(Math.random()*wm.length)]);
+    // ── Weekly leader ──
+    var wd = curWeek(today);
+    var weekArr = ADV.map(function(a){
+      return {a:a, v:wd.reduce(function(s,d){return s+(aMap[a][d]||0);},0)};
+    }).sort(function(x,y){return y.v-x.v;}).filter(function(x){return x.v>0;});
+    if(weekArr.length) {
+      var nw = weekArr[0].a;
+      var nwName = nw.split(" ")[0]+" "+nw.split(" ")[1];
+      if(rnPrevWeek && rnPrevWeek !== nw) {
+        rnShow("rnLead","🏅",nwName,rnPick(["Lider de la semana. Eso es consistencia de campeon.","Primero en la semana. El trabajo sostenido tiene recompensa.","Top semanal. El equipo aprende de lo que haces."]),nwName+" es el lider de la semana. Consistencia de campeon!");
       }
-      prevWeekLeader=nwl;
+      rnPrevWeek = nw;
     }
-  }catch(ex){console.log("rankErr",ex);}
+  } catch(e) { console.error("checkRanks error:", e); }
 }
+// ── END RANK NOTIFICATIONS ─────────────────────────────────────────
 
 function showTab(name){
   document.querySelectorAll(".tab").forEach(el=>el.classList.remove("act"));
@@ -1378,12 +1371,12 @@ function init(){
         if(arr[0]){showToast("NUEVA VENTA: "+arr[0].a+" — "+arr[0].pl+" — "+fCOP(arr[0].bl));showSaleAnim(arr[0]);}
       }
       lastSalesN=Object.keys(nd.sales||{}).length;
-    } else {lastSalesN=Object.keys(nd.sales||{}).length;firstLoad=false;}
-    db=nd;
+      db=nd;
+      setTimeout(function(){checkRanks();}, 800);
+    } else {lastSalesN=Object.keys(nd.sales||{}).length;firstLoad=false;db=nd;}
     showApp();
     renderAll();
-    if(!firstLoad)checkRankChanges();
-  },(error)=>{
+    },(error)=>{
     clearTimeout(timeout);
     showApp();
     renderAll();
