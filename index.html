@@ -283,6 +283,18 @@ td.td-l{text-align:left;padding-left:7px;font-size:10px}
 @keyframes loadBar{0%{width:0%}100%{width:100%}}
 .splash-sub{font-size:11px;color:rgba(255,255,255,.3);margin-top:10px;letter-spacing:.5px}
 
+
+#rankNotif{position:fixed;top:90px;right:16px;z-index:5000;display:flex;flex-direction:column;gap:8px;pointer-events:none;max-width:320px;}
+.rn-card{background:rgba(15,23,42,0.97);border-radius:14px;padding:14px 16px;border:1px solid rgba(255,255,255,0.12);box-shadow:0 8px 32px rgba(0,0,0,0.5);animation:rnIn .4s cubic-bezier(.175,.885,.32,1.275) both;pointer-events:none;}
+.rn-card.out{animation:rnOut .4s ease forwards;}
+@keyframes rnIn{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes rnOut{from{transform:translateX(0);opacity:1}to{transform:translateX(120%);opacity:0}}
+.rn-up{border-color:rgba(16,185,129,0.5);background:linear-gradient(135deg,rgba(15,23,42,0.97),rgba(6,95,70,0.3));}
+.rn-down{border-color:rgba(239,68,68,0.4);background:linear-gradient(135deg,rgba(15,23,42,0.97),rgba(127,29,29,0.2));}
+.rn-lead{border-color:rgba(245,158,11,0.6);background:linear-gradient(135deg,rgba(15,23,42,0.97),rgba(120,53,15,0.3));}
+.rn-icon{font-size:22px;margin-bottom:4px}
+.rn-title{font-size:12px;font-weight:700;margin-bottom:2px}
+.rn-msg{font-size:11px;color:#94A3B8;line-height:1.45}
 </style>
 </head>
 <body>
@@ -323,6 +335,7 @@ td.td-l{text-align:left;padding-left:7px;font-size:10px}
   <div class="splash-sub">Team Jarold Barrios · Mayo 2026</div>
 </div>
 
+<div id="rankNotif"></div>
 <div id="app-loading" class="loading">
   <div style="font-size:32px;margin-bottom:12px;animation:bounce 1s ease-in-out infinite">🚀</div>
   <div style="color:#6EE7B7;font-weight:600;font-size:15px;margin-bottom:6px">Conectando con la nube...</div>
@@ -1055,6 +1068,117 @@ function renderBdays(){
       const dm=bdmap[a],isT=isBDtoday(dm),d=nextBD(dm),isSoon=d!==null&&d<=7&&!isT;
       return'<div class="bd-card'+(isT?" today":isSoon?" soon":"")+'"><div class="bd-name">'+a.split(" ")[0]+' '+a.split(" ")[1]+(IS_NEW.has(a)?'<span class="new-badge">N</span>':"")+' '+(isT?'<span class="bd-tag">HOY</span>':isSoon?'<span class="bd-soon-tag">Pronto</span>':"")+'</div><div class="bd-inp"><input placeholder="DD/MM" maxlength="5" style="flex:1;font-size:12px;padding:5px 8px;color:var(--txt)" value="'+dm+'" onchange="updateBday(\''+a+'\',this.value)"><span class="bd-days">'+(d!==null?(d===0?"&#127881;":d+"d"):"")+'</span></div></div>';
     }).join("");
+  }
+}
+
+
+
+function speakRank(type,name){
+  try{
+    var first=name.split(" ")[0];
+    var msg="";
+    if(type==="up1")msg=first+" acaba de subir al Cuartil 1. Eso es excelencia. Felicitaciones "+first+"!";
+    else if(type==="up2")msg=first+" subio al Cuartil 2. Muy bien "+first+", sigue empujando!";
+    else if(type==="up3")msg=first+" salio del Cuartil 4. La tendencia es tuya "+first+", no pares!";
+    else if(type==="down")msg=first+", el cuartil bajo. Es momento de reaccionar y dar mas.";
+    else if(type==="day")msg=first+" lidera el dia de hoy. El equipo te esta mirando. Mantente arriba!";
+    else if(type==="week")msg=first+" es el lider de la semana. Eso es consistencia de campeon!";
+    if(!msg)return;
+    var u=new SpeechSynthesisUtterance(msg);
+    u.lang="es-CO";u.rate=0.88;u.pitch=1.05;u.volume=0.9;
+    var voices=window.speechSynthesis.getVoices();
+    var es=voices.find(function(v){return v.lang==="es-CO";})||voices.find(function(v){return v.lang.startsWith("es");});
+    if(es)u.voice=es;
+    setTimeout(function(){window.speechSynthesis.speak(u);},300);
+  }catch(e){}
+}
+
+// ── RANK TRACKER ──────────────────────────────────────────────────
+let prevQuartiles={};
+let prevDayLeader="";
+let prevWeekLeader="";
+let rankNotifQueue=[];
+let rankNotifRunning=false;
+
+function getQ(rank,total){const p=rank/total;if(p<.25)return 1;if(p<.5)return 2;if(p<.75)return 3;return 4;}
+
+const QUPMSG={
+  1:["Llegaste al TOP! Eres Q1 ahora. Eso es excelencia pura.","Cuartil 1 alcanzado! El equipo te ve arriba. Mantente.","Impresionante! Ya eres parte de la elite del equipo."],
+  2:["Subiste a Q2! Eso no es casualidad, es trabajo.","Q2 logrado! Estas en la mitad superior. Sigue empujando.","Gran salto! Ya estas en Q2. El Q1 esta al alcance."],
+  3:["Saliste de Q4! Cada venta cuenta y lo estás demostrando.","De Q4 a Q3! La tendencia es tuya. No pares ahora.","Mejorando! Ya estas en Q3. El equipo lo nota."]
+};
+const QDOWNMSG=[
+  "El cuartil bajo, pero el dia no termino. Reacciona ahora.","Los numeros piden mas. Tienes el resto del mes para remontar.","Momento de reactivarse. Un cuartil es solo un numero, la actitud lo cambia todo."
+];
+const DAYLEADMSG=["Lider del dia! El equipo te esta mirando. Mantente arriba.","Primer lugar hoy! Eso es lo que diferencia a los mejores.","Top del dia! Esa energia es contagiosa. Sigue así."];
+const WEEKLEADMSG=["Lider de la semana! Eso es consistencia de campeon.","Primero en la semana! El trabajo sostenido tiene recompensa.","Top semanal! El equipo aprende de lo que tu haces."];
+
+function pushRankNotif(type,rankType,name,msg){
+  rankNotifQueue.push({type,rankType,name,msg});
+  speakRank(rankType,name);
+  if(!rankNotifRunning)processRankQueue();
+}
+
+function processRankQueue(){
+  if(!rankNotifQueue.length){rankNotifRunning=false;return;}
+  rankNotifRunning=true;
+  const item=rankNotifQueue.shift();
+  showRankCard(item.type,item.name,item.msg);
+  setTimeout(processRankQueue,3800);
+}
+
+function showRankCard(type,name,msg){
+  const container=document.getElementById("rankNotif");
+  if(!container)return;
+  const icons={up:"🚀",down:"📉",day:"🏆",week:"🏅"};
+  const cls={up:"rn-up",down:"rn-down",day:"rn-lead",week:"rn-lead"};
+  const div=document.createElement("div");
+  div.className="rn-card "+cls[type];
+  div.innerHTML='<div class="rn-icon">'+icons[type]+'</div><div class="rn-title">'+name+'</div><div class="rn-msg">'+msg+'</div>';
+  container.appendChild(div);
+  setTimeout(()=>{div.classList.add("out");setTimeout(()=>div.remove(),400);},2800);
+}
+
+function rnd(arr){return arr[Math.floor(Math.random()*arr.length)];}
+
+function checkRankChanges(){
+  const{srt,aTot,aMap}=derived();
+  const total=ADV.length;
+  const wd=curWeek(today);
+
+  // Check quartile changes
+  srt.forEach((a,idx)=>{
+    const newQ=IS_NEW.has(a)?0:getQ(idx,total);
+    const oldQ=prevQuartiles[a];
+    if(oldQ!==undefined&&newQ!==0&&oldQ!==0){
+      if(newQ<oldQ){
+        const msgs=QUPMSG[newQ]||QUPMSG[3];
+        pushRankNotif("up","up"+newQ,a.split(" ")[0]+" "+a.split(" ")[1],rnd(msgs));
+      } else if(newQ>oldQ){
+        pushRankNotif("down","down",a.split(" ")[0]+" "+a.split(" ")[1],rnd(QDOWNMSG));
+      }
+    }
+    if(newQ!==0)prevQuartiles[a]=newQ;
+  });
+
+  // Check daily leader
+  const dayTop=ADV.map(a=>({a,v:aMap[a]?.[today]||0})).sort((x,y)=>y.v-x.v).filter(x=>x.v>0);
+  if(dayTop.length){
+    const newDayLead=dayTop[0].a;
+    if(prevDayLeader&&newDayLead!==prevDayLeader&&dayTop[0].v>0){
+      pushRankNotif("day","day",newDayLead.split(" ")[0]+" "+newDayLead.split(" ")[1],rnd(DAYLEADMSG));
+    }
+    prevDayLeader=newDayLead;
+  }
+
+  // Check weekly leader
+  const weekTop=ADV.map(a=>({a,v:wd.reduce((s,d)=>s+(aMap[a]?.[d]||0),0)})).sort((x,y)=>y.v-x.v).filter(x=>x.v>0);
+  if(weekTop.length){
+    const newWeekLead=weekTop[0].a;
+    if(prevWeekLeader&&newWeekLead!==prevWeekLeader&&weekTop[0].v>0){
+      pushRankNotif("week","week",newWeekLead.split(" ")[0]+" "+newWeekLead.split(" ")[1],rnd(WEEKLEADMSG));
+    }
+    prevWeekLeader=newWeekLead;
   }
 }
 
