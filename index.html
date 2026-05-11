@@ -1366,6 +1366,7 @@ function init(){
     db=nd;
     showApp();
     renderAll();
+    if(!firstLoad)checkRankChanges();
   },(error)=>{
     clearTimeout(timeout);
     showApp();
