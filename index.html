@@ -995,8 +995,8 @@ function setET(v){esT=v;TYPES.forEach(t=>{document.querySelectorAll("#esTypes .t
 function initBtns(){
   document.getElementById("fPlans").innerHTML=PLANS.map((p,i)=>`<button class="pb" onclick="setFP(${i})">${p.l}</button>`).join("");
   document.getElementById("fTypes").innerHTML=TYPES.map(t=>`<button class="typb" onclick="setFT('${t.v}')">${t.l}</button>`).join("");
-  document.getElementById("esPlans").innerHTML=PLANS.map((p,i)=>`<button class="pb" onclick="setEsP(${i})">${p.l}</button>`).join("");
-  document.getElementById("esTypes").innerHTML=TYPES.map(t=>`<button class="typb" onclick="setEsT('${t.v}')">${t.l}</button>`).join("");
+  document.getElementById("esPlans").innerHTML=PLANS.map((p,i)=>`<button class="pb" onclick="setEP(${i})">${p.l}</button>`).join("");
+  document.getElementById("esTypes").innerHTML=TYPES.map(t=>`<button class="typb" onclick="setET('${t.v}')">${t.l}</button>`).join("");
   refreshBtns();
 }
 function updatePreview(){
